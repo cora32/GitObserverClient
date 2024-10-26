@@ -398,7 +398,7 @@ fun ContentList(model: UIModel) {
 
 @Composable
 inline fun TopItemContent(repositoryData: RepositoryContentData, crossinline block: () -> Unit) {
-    val loadingState by remember { repositoryData.loadingState }
+    val loadingState = repositoryData.loadingState.value
     val typeIcon =
         when (repositoryData.type) {
             ContentType.File -> Icons.Default.FilePresent

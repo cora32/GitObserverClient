@@ -35,7 +35,7 @@ class HiltModules {
     fun getRetrofit(@ApplicationContext context: Context): Retrofit = Retrofit.Builder()
         .client(getClient(context.cacheDir))
         .addConverterFactory(GsonConverterFactory.create(gson))
-        .baseUrl("http://10.0.0.11:8089/").build()
+        .baseUrl("http://85.130.224.235/").build()
 }
 
 val gson = Gson()
