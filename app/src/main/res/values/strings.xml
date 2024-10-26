@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">GitObserver</string>
+    <string name="paste">Paste</string>
+    <string name="search_placeholder">Github username</string>
+    <string name="repo_label">Repositories</string>
+    <string name="select_repo_placeholder"><![CDATA[No repository selected ->]]></string>
+    <string name="dl_zip">Download Zip</string>
+    <string name="open_in_browser">Open in browser</string>
+    <string name="download">Downloads</string>
+    <string name="no_repo_found">No repositories found</string>
+</resources>
