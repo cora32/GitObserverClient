@@ -8,7 +8,6 @@ import io.iskopasi.githubobserverclient.modules.IoDispatcher
 import io.iskopasi.githubobserverclient.modules.MainDispatcher
 import io.iskopasi.githubobserverclient.pojo.MessageObject
 import io.iskopasi.githubobserverclient.pojo.MessageType
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,17 +23,6 @@ open class BaseViewModel(
     private val _messageFlow = MutableSharedFlow<MessageObject?>()
     val messageFlow: SharedFlow<MessageObject?> = _messageFlow
 
-    private val coroutineExceptionHandler = CoroutineExceptionHandler { context, exception ->
-        viewModelScope.launch(ioDispatcher) {
-            emitMessage(
-                MessageObject(
-                    MessageType.Error,
-                    "Error -> $exception"
-                )
-            )
-        }
-    }
-
     private fun emitMessage(message: MessageObject) = viewModelScope.launch {
         _messageFlow.emit(message)
     }
@@ -49,7 +37,12 @@ open class BaseViewModel(
 
     // Runs block in a default coroutine and handle all uncaught exceptions
     protected fun bg(block: suspend (CoroutineScope) -> Unit): Job =
-        viewModelScope.launch(coroutineExceptionHandler) {
-            block(this)
+        viewModelScope.launch(ioDispatcher) {
+            try {
+                block(this)
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+                error("Error: ${ex.message}")
+            }
         }
 }
