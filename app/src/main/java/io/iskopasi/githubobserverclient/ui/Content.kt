@@ -41,7 +41,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,8 +76,8 @@ import io.iskopasi.githubobserverclient.utils.fontFamily
 
 @Composable
 fun Content(innerPadding: PaddingValues, model: UIModel) {
-    val selectedRepo = model.selectedRepo.value
-    val contentLoaderStatus = model.contentLoaderStatus.value
+    val selectedRepo by model.selectedRepo
+    val contentLoaderStatus by model.contentLoaderStatus
 
     Box(
         modifier = Modifier
@@ -115,7 +114,7 @@ fun DLButton(model: UIModel) {
         }
     }
     val context = LocalContext.current
-    val status by remember { model.dlStatus }
+    val status by model.dlStatus
 
     // For >= 33
     // WRITE_EXTERNAL_STORAGE has no effect for versions >= R
@@ -275,7 +274,7 @@ fun ContentPlaceholder() {
 
 @Composable
 fun ContentValue(model: UIModel, selectedRepo: RepositoryData) {
-    val currentUser = model.currentUser.value
+    val currentUser by model.currentUser
 
     Column(
         modifier = Modifier
@@ -366,7 +365,7 @@ fun UserPanel(currentUser: UserData, selectedRepo: RepositoryData, model: UIMode
 
 @Composable
 fun ContentList(model: UIModel) {
-    val contentList = model.selectedRepoContentList.value
+    val contentList by model.selectedRepoContentList
     val context = LocalContext.current
 
     LazyColumn(

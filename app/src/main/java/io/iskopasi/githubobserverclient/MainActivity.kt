@@ -26,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +40,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.iskopasi.githubobserverclient.models.UIModel
 import io.iskopasi.githubobserverclient.ui.Content
@@ -73,13 +73,13 @@ class MainActivity : ComponentActivity() {
             val focusManager = LocalFocusManager.current
             val snackState = SnackbarHostState()
             val drawerState = rememberDrawerState(initialValue = DrawerValue.Open)
-            val errorFlow by model.errorFlow.collectAsState()
+            val errorFlow by model.messageFlow.collectAsStateWithLifecycle(null, this)
 
             // Show snackbar with error and close keyboard on error
             if (errorFlow != null) {
-                LaunchedEffect(errorFlow) {
+                LaunchedEffect(errorFlow!!.data) {
                     focusManager.clearFocus()
-                    snackState.showSnackbar(errorFlow!!)
+                    snackState.showSnackbar(errorFlow!!.data)
                 }
             }
 

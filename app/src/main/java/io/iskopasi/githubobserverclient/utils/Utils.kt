@@ -8,8 +8,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.iskopasi.githubobserverclient.BuildConfig
-import io.iskopasi.githubobserverclient.pojo.GOResult
-import io.iskopasi.githubobserverclient.pojo.Status
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -59,11 +57,6 @@ inline fun clickDelay(
         block()
     }
 }
-
-// Response wrappers
-fun <T> T.asOk(): GOResult<T> = GOResult(this, Status.OK)
-
-fun <T> String.asError() = GOResult.error<T>(error = this)
 
 
 // Async utils

@@ -3,24 +3,23 @@ package io.iskopasi.githubobserverclient.models
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.AndroidViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.iskopasi.githubobserverclient.MarkupActivity
+import io.iskopasi.githubobserverclient.modules.IoDispatcher
+import io.iskopasi.githubobserverclient.modules.MainDispatcher
 import io.iskopasi.githubobserverclient.pojo.RepositoryContentData
 import io.iskopasi.githubobserverclient.pojo.RepositoryData
-import io.iskopasi.githubobserverclient.pojo.Status
 import io.iskopasi.githubobserverclient.pojo.UserData
 import io.iskopasi.githubobserverclient.repo.Repo
 import io.iskopasi.githubobserverclient.service.DLService
 import io.iskopasi.githubobserverclient.utils.GitHierarchy
-import io.iskopasi.githubobserverclient.utils.bg
 import io.iskopasi.githubobserverclient.utils.openDownloadsFolder
-import io.iskopasi.githubobserverclient.utils.ui
 import io.iskopasi.simplymotion.utils.ServiceCommunicator
-import kotlinx.coroutines.flow.MutableStateFlow
 import javax.inject.Inject
+import kotlin.coroutines.CoroutineContext
 
 enum class SearchStatus {
     Loading,
@@ -31,45 +30,60 @@ enum class SearchStatus {
 @HiltViewModel
 class UIModel @Inject constructor(
     context: Application,
-    private val repo: Repo
-) : AndroidViewModel(context) {
+    private val repo: Repo,
+    @IoDispatcher private val ioDispatcher: CoroutineContext,
+    @MainDispatcher private val mainDispatcher: CoroutineContext
+) : BaseViewModel(
+    context,
+    ioDispatcher = ioDispatcher,
+    mainDispatcher = mainDispatcher
+) {
     private var hierarchy: GitHierarchy = GitHierarchy(listOf())
-    val userDataList = mutableStateOf(listOf<UserData>())
-    val repoDataList = mutableStateOf(listOf<RepositoryData>())
-    val selectedRepoContentList = mutableStateOf(listOf<RepositoryContentData>())
-    val currentUser =
-        mutableStateOf(UserData.empty)
-    val selectedRepo = mutableStateOf(RepositoryData.empty)
-    val searchStatus = mutableStateOf(SearchStatus.Idle)
-    val repoLoaderStatus = mutableStateOf(SearchStatus.Idle)
-    val contentLoaderStatus = mutableStateOf(SearchStatus.Idle)
-    val dlStatus = mutableStateOf(SearchStatus.Idle)
-    val errorFlow = MutableStateFlow<String?>(null)
+    private val _userDataList = mutableStateOf(listOf<UserData>())
+    private val _repoDataList = mutableStateOf(listOf<RepositoryData>())
+    private val _selectedRepoContentList = mutableStateOf(listOf<RepositoryContentData>())
+    private val _currentUser = mutableStateOf(UserData.empty)
+    private val _selectedRepo = mutableStateOf(RepositoryData.empty)
+    private val _searchStatus = mutableStateOf(SearchStatus.Idle)
+    private val _repoLoaderStatus = mutableStateOf(SearchStatus.Idle)
+    private val _contentLoaderStatus = mutableStateOf(SearchStatus.Idle)
+    private val _dlStatus = mutableStateOf(SearchStatus.Idle)
+
+    // Public states
+    val userDataList: State<List<UserData>> = _userDataList
+    val repoDataList: State<List<RepositoryData>> = _repoDataList
+    val selectedRepoContentList: State<List<RepositoryContentData>> = _selectedRepoContentList
+    val currentUser: State<UserData> = _currentUser
+    val selectedRepo: State<RepositoryData> = _selectedRepo
+    val searchStatus: State<SearchStatus> = _searchStatus
+    val repoLoaderStatus: State<SearchStatus> = _repoLoaderStatus
+    val contentLoaderStatus: State<SearchStatus> = _contentLoaderStatus
+    val dlStatus: State<SearchStatus> = _dlStatus
 
     private val serviceCommunicator by lazy {
         ServiceCommunicator("UIModel") { data, obj, comm ->
             when (data) {
                 SearchStatus.Idle.name -> {
-                    dlStatus.value = SearchStatus.Idle
+                    _dlStatus.value = SearchStatus.Idle
 
                     openDownloadsFolder(getApplication())
                 }
 
                 SearchStatus.Loading.name -> {
-                    dlStatus.value = SearchStatus.Loading
+                    _dlStatus.value = SearchStatus.Loading
                 }
 
                 SearchStatus.Error.name -> {
-                    ui { errorFlow.emit(obj as String) }
-                    dlStatus.value = SearchStatus.Idle
+                    error(obj as String)
+                    _dlStatus.value = SearchStatus.Idle
                 }
             }
         }
     }
 
     fun selectUser(userData: UserData) {
-        selectedRepo.value = RepositoryData.empty
-        currentUser.value = userData
+        _selectedRepo.value = RepositoryData.empty
+        _currentUser.value = userData
 
         // Clear search UI
         clearUserSearchResults()
@@ -79,107 +93,79 @@ class UIModel @Inject constructor(
     }
 
     fun selectRepository(repositoryData: RepositoryData) {
-        if (selectedRepo.value.name != repositoryData.name) {
-            selectedRepo.value = repositoryData
+        if (_selectedRepo.value.name != repositoryData.name) {
+            _selectedRepo.value = repositoryData
             requestInitialRepositoryContent()
         }
     }
 
     fun searchUser(user: String) = bg {
         if (user.isEmpty()) {
-            userDataList.value = listOf()
+            _userDataList.value = listOf()
             return@bg
         }
 
         // Set search icon to loading indication
-        searchStatus.value = SearchStatus.Loading
+        _searchStatus.value = SearchStatus.Loading
 
         // Request users
         val result = repo.searchUser(user)
 
         // Parse response
-        when (result.status) {
-            Status.OK -> userDataList.value = result.data!!
-            Status.Error -> {
-                userDataList.value = listOf()
-                errorFlow.emit("Error -> ${result.error}")
-            }
-
-            Status.Unknown -> {}
-        }
+        _userDataList.value = result!!
 
         // Reset search state
-        searchStatus.value = SearchStatus.Idle
+        _searchStatus.value = SearchStatus.Idle
     }
 
     fun clearUserSearchResults() {
-        userDataList.value = listOf()
+        _userDataList.value = listOf()
     }
 
     fun requestRepositories() = bg {
-        if (currentUser.value.isEmpty()) return@bg
+        if (_currentUser.value.isEmpty()) return@bg
 
         // Set repository loading indication
-        repoLoaderStatus.value = SearchStatus.Loading
+        _repoLoaderStatus.value = SearchStatus.Loading
 
         // Request repositories
-        val result = repo.getRepositories(currentUser.value.login)
+        val result = repo.getRepositories(_currentUser.value.login)
 
         // Parse response
-        when (result.status) {
-            Status.OK -> repoDataList.value = result.data!!
-            Status.Error -> {
-                repoDataList.value = listOf()
-                errorFlow.emit("Error -> ${result.error}")
-            }
-
-            Status.Unknown -> {}
-        }
+        _repoDataList.value = result
 
         // Reset repository loader state
-        repoLoaderStatus.value = SearchStatus.Idle
+        _repoLoaderStatus.value = SearchStatus.Idle
     }
 
     fun requestInitialRepositoryContent() = bg {
-        if (currentUser.value.isEmpty()) return@bg
-        if (selectedRepo.value.isEmpty()) return@bg
+        if (_currentUser.value.isEmpty()) return@bg
+        if (_selectedRepo.value.isEmpty()) return@bg
 
         // Set content loading indication
-        contentLoaderStatus.value = SearchStatus.Loading
+        _contentLoaderStatus.value = SearchStatus.Loading
 
         // Request repositories
         val result = repo.getRepositoryContent(
-            currentUser.value.login,
-            selectedRepo.value.name,
+            _currentUser.value.login,
+            _selectedRepo.value.name,
         )
 
-        // Parse response
-        when (result.status) {
-            Status.OK -> {
-                hierarchy = GitHierarchy(result.data!!)
-                selectedRepoContentList.value = hierarchy.data
-            }
-
-            Status.Error -> {
-                selectedRepoContentList.value = listOf<RepositoryContentData>()
-                errorFlow.emit("Error -> ${result.error}")
-            }
-
-            Status.Unknown -> {}
-        }
+        hierarchy = GitHierarchy(result)
+        _selectedRepoContentList.value = hierarchy.data
 
         // Reset content loader state
-        contentLoaderStatus.value = SearchStatus.Idle
+        _contentLoaderStatus.value = SearchStatus.Idle
     }
 
     fun expandContent(data: RepositoryContentData) = bg {
-        if (currentUser.value.isEmpty()) return@bg
-        if (selectedRepo.value.isEmpty()) return@bg
+        if (_currentUser.value.isEmpty()) return@bg
+        if (_selectedRepo.value.isEmpty()) return@bg
 
         // Just remove content from node
         if (hierarchy.hasContent(data)) {
             val flatData = hierarchy.removeContentForNode(data)
-            selectedRepoContentList.value = flatData
+            _selectedRepoContentList.value = flatData
             return@bg
         }
 
@@ -188,26 +174,15 @@ class UIModel @Inject constructor(
 
         // Request nested data
         val result = repo.getRepositoryContent(
-            currentUser.value.login,
-            selectedRepo.value.name,
+            _currentUser.value.login,
+            _selectedRepo.value.name,
             data.path
         )
 
-        // Parse response
-        when (result.status) {
-            Status.OK -> {
-                // Add content and remap inner structure
-                val flatData = hierarchy.addNestedContent(data, result.data!!)
-                // Update state with new content
-                selectedRepoContentList.value = flatData
-            }
-
-            Status.Error -> {
-                errorFlow.emit("Error -> ${result.error}")
-            }
-
-            Status.Unknown -> {}
-        }
+        // Add content and remap inner structure
+        val flatData = hierarchy.addNestedContent(data, result)
+        // Update state with new content
+        _selectedRepoContentList.value = flatData
 
         data.loadingState.value = SearchStatus.Idle
     }
@@ -224,9 +199,9 @@ class UIModel @Inject constructor(
             context,
             DLService::class.java
         ).apply {
-            putExtra("repoName", selectedRepo.value.name)
-            putExtra("owner", currentUser.value.login)
-            putExtra("defaultBranch", currentUser.value.defaultBranch)
+            putExtra("repoName", _selectedRepo.value.name)
+            putExtra("owner", _currentUser.value.login)
+            putExtra("defaultBranch", _currentUser.value.defaultBranch)
         }
 
         context.bindService(
@@ -240,7 +215,5 @@ class UIModel @Inject constructor(
         )
     }
 
-    fun showError(error: String) = ui {
-        errorFlow.emit(error)
-    }
+    fun showError(error: String) = error(error)
 }

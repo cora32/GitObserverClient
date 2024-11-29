@@ -18,7 +18,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.iskopasi.githubobserverclient.MainActivity
 import io.iskopasi.githubobserverclient.R
 import io.iskopasi.githubobserverclient.models.SearchStatus
-import io.iskopasi.githubobserverclient.pojo.Status
 import io.iskopasi.githubobserverclient.repo.Repo
 import io.iskopasi.simplymotion.utils.CommunicatorCallback
 import io.iskopasi.simplymotion.utils.ServiceCommunicator
@@ -64,23 +63,17 @@ class DLService() : LifecycleService() {
             val result = repo.downloadZip(owner, repoName, defaultBranch)
 
             // Parse response
-            when (result.status) {
-                Status.OK -> {
-                    serviceCommunicator.sendMsg(SearchStatus.Idle.name)
-                }
-
-                Status.Error -> serviceCommunicator.sendMsg(
-                    SearchStatus.Error.name,
-                    "DL Error -> ${result.error}"
-                )
-
-                else -> serviceCommunicator.sendMsg(
-                    SearchStatus.Error.name,
-                    "Unknown DL Error -> ${result.error}"
-                )
-            }
+            serviceCommunicator.sendMsg(SearchStatus.Idle.name)
 
             stopSelf()
+        }.invokeOnCompletion { handler ->
+            if (handler != null) {
+                handler.printStackTrace()
+                serviceCommunicator.sendMsg(
+                    SearchStatus.Error.name,
+                    "DL Error -> ${handler.message}"
+                )
+            }
         }
 
         return super.onStartCommand(intent, flags, startId)

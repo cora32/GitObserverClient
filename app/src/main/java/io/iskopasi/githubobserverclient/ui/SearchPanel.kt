@@ -230,7 +230,7 @@ fun PasteButton(
 
 @Composable
 fun LeadingIcon(model: UIModel) {
-    val searchStatus = model.searchStatus.value
+    val searchStatus by model.searchStatus
 
     when (searchStatus) {
         SearchStatus.Loading -> Loader(30.dp, 2.dp)
@@ -242,7 +242,7 @@ fun LeadingIcon(model: UIModel) {
 
 @Composable
 inline fun DropDownList(model: UIModel, crossinline block: () -> Unit) {
-    val userDataList = model.userDataList.value
+    val userDataList by model.userDataList
     val listState = rememberLazyListState()
 
     if (userDataList.isNotEmpty()) {

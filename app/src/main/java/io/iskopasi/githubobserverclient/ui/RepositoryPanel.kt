@@ -61,7 +61,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AnimatedVisibilityScope.RepositoryPanel(model: UIModel, drawerState: DrawerState) {
-    val userData = model.currentUser.value
+    val userData by model.currentUser
 
     when {
         userData.isEmpty() -> Loader(100.dp, 3.dp)
@@ -99,7 +99,7 @@ fun RepoListPlaceholder() {
 
 @Composable
 fun RepoContent(model: UIModel, userData: UserData, drawerState: DrawerState) {
-    val selectedRepo = model.selectedRepo.value
+    val selectedRepo by model.selectedRepo
 
     Column(modifier = Modifier.fillMaxSize()) {
         // User avatar and name block
@@ -180,8 +180,8 @@ fun RepoContent(model: UIModel, userData: UserData, drawerState: DrawerState) {
 
 @Composable
 fun RepoList(model: UIModel, drawerState: DrawerState) {
-    val loadingStatus = model.repoLoaderStatus.value
-    val repoDataList = model.repoDataList.value
+    val loadingStatus by model.repoLoaderStatus
+    val repoDataList by model.repoDataList
     var selectedRepoIndex by remember { mutableIntStateOf(-1) }
     val scope = rememberCoroutineScope()
 

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.DrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import io.iskopasi.githubobserverclient.models.UIModel
@@ -15,7 +16,7 @@ import io.iskopasi.githubobserverclient.models.UIModel
 @Composable
 fun DrawerContent(model: UIModel, drawerState: DrawerState) {
     val focusManager = LocalFocusManager.current
-    val currentUser = model.currentUser.value
+    val currentUser by model.currentUser
 
     Box(
         Modifier
