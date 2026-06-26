@@ -1,4 +1,4 @@
-## Github Viewer on Jetpack Compose
+## Github Viewer written in Kotlin+Jetpack Compose
 
 Minimum required API: 23
 
